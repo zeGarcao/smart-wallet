@@ -6,8 +6,25 @@ contract SmartWallet {
     address[] private guardians;
     mapping(address => bool) public isGuardian;
 
-    constructor(address[] memory _guardians) {
+    uint public requiredVotes;
+    uint public currentRecoveryRound;
+    bool public inRecovery;
+    struct Recovery {
+        address candidate;
+        uint recoveryRound;
+        bool usedInExecuteRecovery;
+    }
+    mapping(address => Recovery) guardianToRecovery;
+
+    constructor(address[] memory _guardians, uint _requiredVotes) {
+        require(
+            _requiredVotes <= _guardians.length,
+            "required votes exceeds guardians length"
+        );
+        require(_requiredVotes > 0, "required votes must be greater than zero");
+
         owner = msg.sender;
+        requiredVotes = _requiredVotes;
 
         for (uint i = 0; i < _guardians.length; ++i) {
             addGuardian(_guardians[i]);
@@ -18,6 +35,11 @@ contract SmartWallet {
 
     modifier onlyOwner() {
         require(msg.sender == owner, "caller is not owner");
+        _;
+    }
+
+    modifier onlyGuardian() {
+        require(isGuardian[msg.sender], "caller is not guardian");
         _;
     }
 
@@ -59,26 +81,95 @@ contract SmartWallet {
         require(_guardian != address(0), "address can not be the zero address");
         require(isGuardian[_guardian], "guardian does not exist");
 
-        uint index = getIndexFromAddress(_guardian);
-        guardians[index] = guardians[guardians.length - 1];
-        guardians.pop();
+        removeFromArray(guardians, _guardian);
         isGuardian[_guardian] = false;
 
         return true;
     }
 
+    function getGuardians() external view returns (address[] memory) {
+        return guardians;
+    }
+
+    function triggerRecovery(
+        address _candidate
+    ) public onlyGuardian returns (bool) {
+        require(!inRecovery, "already in recovery mode");
+        require(_candidate != address(0), "zero address invalid");
+
+        inRecovery = true;
+        ++currentRecoveryRound;
+        saveVote(msg.sender, Recovery(_candidate, currentRecoveryRound, false));
+
+        return true;
+    }
+
+    function supportRecovery(
+        address _candidate
+    ) public onlyGuardian returns (bool) {
+        require(inRecovery, "not in recovery mode");
+
+        saveVote(msg.sender, Recovery(_candidate, currentRecoveryRound, false));
+
+        return true;
+    }
+
+    function executeRecovery(
+        address _candidate,
+        address[] calldata _guardians
+    ) public onlyGuardian returns (bool) {
+        require(_candidate != address(0), "zero address invalid");
+        require(
+            _guardians.length >= requiredVotes,
+            "guardians less than required"
+        );
+
+        for (uint i = 0; i < _guardians.length; i++) {
+            Recovery memory recovery = guardianToRecovery[_guardians[i]];
+
+            require(
+                recovery.recoveryRound == currentRecoveryRound,
+                "round mismatch"
+            );
+            require(
+                recovery.candidate == _candidate,
+                "disagreement on new owner"
+            );
+            require(!recovery.usedInExecuteRecovery, "duplicate guardian");
+
+            guardianToRecovery[_guardians[i]].usedInExecuteRecovery = true;
+        }
+
+        inRecovery = false;
+        owner = _candidate;
+
+        return true;
+    }
+
+    function cancelRecovery() public onlyOwner returns (bool) {
+        require(inRecovery, "not in recovery mode");
+        inRecovery = false;
+    }
+
+    function saveVote(address _guardian, Recovery memory _vote) private {
+        guardianToRecovery[_guardian] = _vote;
+    }
+
+    function removeFromArray(address[] storage _arr, address _addr) private {
+        uint index = getIndexFromAddress(_arr, _addr);
+        _arr[index] = _arr[_arr.length - 1];
+        _arr.pop();
+    }
+
     function getIndexFromAddress(
+        address[] memory arr,
         address _address
-    ) private view returns (uint _index) {
-        for (uint i = 0; i < guardians.length; ++i) {
-            if (guardians[i] == _address) {
+    ) private pure returns (uint _index) {
+        for (uint i = 0; i < arr.length; ++i) {
+            if (arr[i] == _address) {
                 _index = i;
                 break;
             }
         }
-    }
-
-    function getGuardians() external view returns (address[] memory) {
-        return guardians;
     }
 }
