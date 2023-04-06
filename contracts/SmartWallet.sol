@@ -24,6 +24,9 @@ contract SmartWallet {
     /// @notice true if wallet is in recovery mode
     bool public inRecovery;
 
+    /// @notice true if wallet transfers are paused
+    bool public isPaused;
+
     /// @notice struct used for bookkeeping during recovery mode
     struct Recovery {
         address candidate;
@@ -48,11 +51,53 @@ contract SmartWallet {
         _;
     }
 
+    modifier notInRecovery() {
+        require(!inRecovery, "wallet is in recovery mode");
+        _;
+    }
+
+    modifier onlyInRecovery() {
+        require(inRecovery, "wallet is not in recovery mode");
+        _;
+    }
+
     /******************************************************
      *   EVENTS
      ******************************************************/
 
-    /// TODO
+    /// @notice emitted when a deposit is executed
+    event Deposit(address indexed from, uint indexed timestamp, uint amount);
+
+    /// @notice emitted when a transfer is executed
+    event Transfer(address indexed to, uint indexed timestamp, uint amount);
+
+    /// @notice emitted when the recovery round is initiated
+    event RecoveryInitiated(
+        address indexed by,
+        uint indexed timestamp,
+        address candidate,
+        uint indexed round
+    );
+
+    /// @notice emitted when the recovery round is supported
+    event RecoverySupported(
+        address indexed by,
+        uint indexed timestamp,
+        address candidate,
+        uint indexed round
+    );
+
+    /// @notice emitted when the recovery round is executed
+    event RecoveryExecuted(
+        address indexed by,
+        uint indexed timestamp,
+        address oldOwner,
+        address newOwner,
+        uint indexed round
+    );
+
+    /// @notice emitted when the recovery round is cancelled
+    event RecoveryCancelled(uint indexed timestamp, uint indexed round);
 
     /******************************************************
      *   CONSTRUCTOR
@@ -74,6 +119,7 @@ contract SmartWallet {
         requiredVotes = _requiredVotes;
 
         for (uint i = 0; i < _guardians.length; ++i) {
+            require(!isGuardian[guardians[i]], "duplicate guardian");
             addGuardian(_guardians[i]);
         }
     }
@@ -83,7 +129,9 @@ contract SmartWallet {
      ******************************************************/
 
     /// @notice allows deposit of ether
-    receive() external payable {}
+    receive() external payable {
+        emit Deposit(msg.sender, block.timestamp, msg.value);
+    }
 
     /**
      * @notice allows transfer of ether to another account
@@ -100,6 +148,8 @@ contract SmartWallet {
 
         payable(_to).transfer(_amount);
 
+        emit Transfer(_to, block.timestamp, _amount);
+
         return true;
     }
 
@@ -107,8 +157,22 @@ contract SmartWallet {
      * @notice allows to retrieve the wallet balance
      * @return - wallet balance
      */
-    function getBalance() external view returns (uint) {
+    function getBalance() public view returns (uint) {
         return address(this).balance;
+    }
+
+    /**
+     * @notice allows to pause transfers
+     */
+    function pauseTransfers() external onlyOwner {
+        isPaused = true;
+    }
+
+    /**
+     * @notice allows to resume transfers
+     */
+    function resumeTransfers() external onlyOwner {
+        isPaused = false;
     }
 
     /******************************************************
@@ -120,7 +184,9 @@ contract SmartWallet {
      * @param _guardian - guardian address to be added
      * @return - true if guardian added successfuly
      */
-    function addGuardian(address _guardian) public onlyOwner returns (bool) {
+    function addGuardian(
+        address _guardian
+    ) public onlyOwner notInRecovery returns (bool) {
         require(!isGuardian[_guardian], "duplicate guardian");
         require(_guardian != address(0), "address can not be the zero address");
         require(_guardian != owner, "owner can not be a guardian");
@@ -138,9 +204,13 @@ contract SmartWallet {
      */
     function removeGuardian(
         address _guardian
-    ) external onlyOwner returns (bool) {
+    ) public onlyOwner notInRecovery returns (bool) {
         require(_guardian != address(0), "address can not be the zero address");
         require(isGuardian[_guardian], "guardian does not exist");
+        require(
+            guardians.length - 1 >= requiredVotes,
+            "required votes must be greater than the number of guardians"
+        );
 
         removeFromArray(guardians, _guardian);
         isGuardian[_guardian] = false;
@@ -152,7 +222,7 @@ contract SmartWallet {
      * @notice allows to retrieve guardians
      * @return - array of guardians
      */
-    function getGuardians() external view returns (address[] memory) {
+    function getGuardians() public view returns (address[] memory) {
         return guardians;
     }
 
@@ -161,19 +231,48 @@ contract SmartWallet {
      ******************************************************/
 
     /**
+     *
+     * @param _requiredVotes - new required votes to transfer ownership
+     * @return - true if required votes changed successfuly
+     */
+    function setRequiredVotes(
+        uint _requiredVotes
+    ) external onlyOwner notInRecovery returns (bool) {
+        require(_requiredVotes > 0, "required votes must be greater than zero");
+        require(
+            _requiredVotes <= guardians.length,
+            "required votes greater than the number of guardians"
+        );
+        require(
+            _requiredVotes != requiredVotes,
+            "required votes already has that value"
+        );
+
+        requiredVotes = _requiredVotes;
+
+        return true;
+    }
+
+    /**
      * @notice allows trigger the recovery mode
      * @param _candidate - address of the candidate
      * @return - true if triggered the recovery mode successfuly
      */
     function triggerRecovery(
         address _candidate
-    ) public onlyGuardian returns (bool) {
-        require(!inRecovery, "already in recovery mode");
+    ) public onlyGuardian notInRecovery returns (bool) {
         require(_candidate != address(0), "zero address invalid");
 
         inRecovery = true;
         ++currentRecoveryRound;
         saveVote(msg.sender, Recovery(_candidate, currentRecoveryRound, false));
+
+        emit RecoveryInitiated(
+            msg.sender,
+            block.timestamp,
+            _candidate,
+            currentRecoveryRound
+        );
 
         return true;
     }
@@ -185,10 +284,15 @@ contract SmartWallet {
      */
     function supportRecovery(
         address _candidate
-    ) public onlyGuardian returns (bool) {
-        require(inRecovery, "not in recovery mode");
-
+    ) public onlyGuardian onlyInRecovery returns (bool) {
         saveVote(msg.sender, Recovery(_candidate, currentRecoveryRound, false));
+
+        emit RecoverySupported(
+            msg.sender,
+            block.timestamp,
+            _candidate,
+            currentRecoveryRound
+        );
 
         return true;
     }
@@ -202,7 +306,7 @@ contract SmartWallet {
     function executeRecovery(
         address _candidate,
         address[] calldata _guardians
-    ) public onlyGuardian returns (bool) {
+    ) public onlyGuardian onlyInRecovery returns (bool) {
         require(_candidate != address(0), "zero address invalid");
         require(
             _guardians.length >= requiredVotes,
@@ -226,7 +330,16 @@ contract SmartWallet {
         }
 
         inRecovery = false;
+        address oldOwner = owner;
         owner = _candidate;
+
+        emit RecoveryExecuted(
+            msg.sender,
+            block.timestamp,
+            oldOwner,
+            owner,
+            currentRecoveryRound
+        );
 
         return true;
     }
@@ -235,11 +348,12 @@ contract SmartWallet {
      * @notice allows owner to cancel the recovery round
      * @return - true if recovery round was successfuly canceled
      */
-    function cancelRecovery() public onlyOwner returns (bool) {
-        require(inRecovery, "not in recovery mode");
-
+    function cancelRecovery() public onlyOwner onlyInRecovery returns (bool) {
         inRecovery = false;
+        uint cancelledRound = currentRecoveryRound;
         ++currentRecoveryRound;
+
+        emit RecoveryCancelled(block.timestamp, cancelledRound);
 
         return true;
     }
@@ -270,15 +384,16 @@ contract SmartWallet {
 
     /**
      * @notice allows to retrieve the index of an array element
-     * @param arr - search array
+     * @param _arr - search array
      * @param _address - address
+     * @return _index - index of the element
      */
     function getIndexFromAddress(
-        address[] memory arr,
+        address[] memory _arr,
         address _address
     ) private pure returns (uint _index) {
-        for (uint i = 0; i < arr.length; ++i) {
-            if (arr[i] == _address) {
+        for (uint i = 0; i < _arr.length; ++i) {
+            if (_arr[i] == _address) {
                 _index = i;
                 break;
             }
