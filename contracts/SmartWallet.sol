@@ -76,15 +76,14 @@ contract SmartWallet {
      ******************************************************/
 
     /// @notice emitted when a deposit is executed
-    event Deposit(address indexed from, uint indexed timestamp, uint amount);
+    event Deposit(address indexed from, uint amount);
 
     /// @notice emitted when a transfer is executed
-    event Transfer(address indexed to, uint indexed timestamp, uint amount);
+    event Transfer(address indexed to, uint amount);
 
     /// @notice emitted when the recovery round is initiated
     event RecoveryInitiated(
         address indexed by,
-        uint indexed timestamp,
         address candidate,
         uint indexed round
     );
@@ -92,7 +91,6 @@ contract SmartWallet {
     /// @notice emitted when the recovery round is supported
     event RecoverySupported(
         address indexed by,
-        uint indexed timestamp,
         address candidate,
         uint indexed round
     );
@@ -100,14 +98,13 @@ contract SmartWallet {
     /// @notice emitted when the recovery round is executed
     event RecoveryExecuted(
         address indexed by,
-        uint indexed timestamp,
         address oldOwner,
         address newOwner,
         uint indexed round
     );
 
     /// @notice emitted when the recovery round is cancelled
-    event RecoveryCancelled(uint indexed timestamp, uint indexed round);
+    event RecoveryCancelled(uint indexed round);
 
     /******************************************************
      *   CONSTRUCTOR
@@ -140,7 +137,7 @@ contract SmartWallet {
 
     /// @notice allows deposit of ether
     receive() external payable {
-        emit Deposit(msg.sender, block.timestamp, msg.value);
+        emit Deposit(msg.sender, msg.value);
     }
 
     /**
@@ -158,7 +155,7 @@ contract SmartWallet {
 
         payable(_to).transfer(_amount);
 
-        emit Transfer(_to, block.timestamp, _amount);
+        emit Transfer(_to, _amount);
 
         return true;
     }
@@ -277,12 +274,7 @@ contract SmartWallet {
         ++currentRecoveryRound;
         saveVote(msg.sender, Recovery(_candidate, currentRecoveryRound, false));
 
-        emit RecoveryInitiated(
-            msg.sender,
-            block.timestamp,
-            _candidate,
-            currentRecoveryRound
-        );
+        emit RecoveryInitiated(msg.sender, _candidate, currentRecoveryRound);
 
         return true;
     }
@@ -297,12 +289,7 @@ contract SmartWallet {
     ) public onlyGuardian onlyInRecovery returns (bool) {
         saveVote(msg.sender, Recovery(_candidate, currentRecoveryRound, false));
 
-        emit RecoverySupported(
-            msg.sender,
-            block.timestamp,
-            _candidate,
-            currentRecoveryRound
-        );
+        emit RecoverySupported(msg.sender, _candidate, currentRecoveryRound);
 
         return true;
     }
@@ -345,7 +332,6 @@ contract SmartWallet {
 
         emit RecoveryExecuted(
             msg.sender,
-            block.timestamp,
             oldOwner,
             owner,
             currentRecoveryRound
@@ -363,7 +349,7 @@ contract SmartWallet {
         uint cancelledRound = currentRecoveryRound;
         ++currentRecoveryRound;
 
-        emit RecoveryCancelled(block.timestamp, cancelledRound);
+        emit RecoveryCancelled(cancelledRound);
 
         return true;
     }
