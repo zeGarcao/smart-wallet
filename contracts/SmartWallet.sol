@@ -61,6 +61,16 @@ contract SmartWallet {
         _;
     }
 
+    modifier notOnPause() {
+        require(!isPaused, "transfers are paused");
+        _;
+    }
+
+    modifier onlyOnPause() {
+        require(isPaused, "transfers are not paused");
+        _;
+    }
+
     /******************************************************
      *   EVENTS
      ******************************************************/
@@ -142,7 +152,7 @@ contract SmartWallet {
     function transferTo(
         address _to,
         uint _amount
-    ) external onlyOwner returns (bool) {
+    ) external onlyOwner notOnPause returns (bool) {
         require(_to != address(0), "receiver can not be the zero address");
         require(_amount <= address(this).balance, "insufficient balance");
 
@@ -164,14 +174,14 @@ contract SmartWallet {
     /**
      * @notice allows to pause transfers
      */
-    function pauseTransfers() external onlyOwner {
+    function pauseTransfers() external onlyOwner notOnPause {
         isPaused = true;
     }
 
     /**
      * @notice allows to resume transfers
      */
-    function resumeTransfers() external onlyOwner {
+    function resumeTransfers() external onlyOwner notOnPause {
         isPaused = false;
     }
 
