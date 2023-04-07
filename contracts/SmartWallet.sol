@@ -126,7 +126,7 @@ contract SmartWallet {
         requiredVotes = _requiredVotes;
 
         for (uint i = 0; i < _guardians.length; ++i) {
-            require(!isGuardian[guardians[i]], "duplicate guardian");
+            require(!isGuardian[_guardians[i]], "duplicate guardian");
             addGuardian(_guardians[i]);
         }
     }
@@ -216,11 +216,37 @@ contract SmartWallet {
         require(isGuardian[_guardian], "guardian does not exist");
         require(
             guardians.length - 1 >= requiredVotes,
-            "required votes must be greater than the number of guardians"
+            "required votes must be less than the number of guardians"
         );
+        require(guardians.length > 0, "must have at least one guardian");
 
         removeFromArray(guardians, _guardian);
         isGuardian[_guardian] = false;
+
+        return true;
+    }
+
+    /**
+     * @notice allows changing a guardian to a new one
+     * @param _oldGuardian - guardian address to be removed
+     * @param _newGuardian - guardian address to be added
+     * @return - true if the change is executed successfuly
+     */
+    function changeGuardian(
+        address _oldGuardian,
+        address _newGuardian
+    ) public onlyOwner notInRecovery returns (bool) {
+        require(isGuardian[_oldGuardian], "guardian does not exist");
+        require(
+            _newGuardian != address(0),
+            "guardian can not be the zero address"
+        );
+        require(_newGuardian != owner, "guardian can not be the owner");
+
+        uint index = getIndexFromAddress(guardians, _oldGuardian);
+        guardians[index] = _newGuardian;
+        isGuardian[_oldGuardian] = false;
+        isGuardian[_newGuardian] = true;
 
         return true;
     }
