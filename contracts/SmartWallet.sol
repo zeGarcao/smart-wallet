@@ -178,7 +178,7 @@ contract SmartWallet {
     /**
      * @notice allows to resume transfers
      */
-    function resumeTransfers() external onlyOwner notOnPause {
+    function resumeTransfers() external onlyOwner onlyOnPause {
         isPaused = false;
     }
 
