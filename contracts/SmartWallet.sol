@@ -126,7 +126,6 @@ contract SmartWallet {
         requiredVotes = _requiredVotes;
 
         for (uint i = 0; i < _guardians.length; ++i) {
-            require(!isGuardian[_guardians[i]], "duplicate guardian");
             addGuardian(_guardians[i]);
         }
     }
@@ -195,7 +194,10 @@ contract SmartWallet {
         address _guardian
     ) public onlyOwner notInRecovery returns (bool) {
         require(!isGuardian[_guardian], "duplicate guardian");
-        require(_guardian != address(0), "address can not be the zero address");
+        require(
+            _guardian != address(0),
+            "guardian can not be the zero address"
+        );
         require(_guardian != owner, "owner can not be a guardian");
 
         guardians.push(_guardian);
@@ -218,7 +220,6 @@ contract SmartWallet {
             guardians.length - 1 >= requiredVotes,
             "required votes must be less than the number of guardians"
         );
-        require(guardians.length > 0, "must have at least one guardian");
 
         removeFromArray(guardians, _guardian);
         isGuardian[_guardian] = false;
