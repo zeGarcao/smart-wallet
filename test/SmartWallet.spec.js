@@ -298,6 +298,7 @@ describe("Smart Wallet W/ Social Recovery", () => {
                 expect(await wallet2of3.getBalance()).to.equal(expectedBalance);
             });
         });
+
         describe("#pauseTransfers", () => {
             describe("On success", () => {
                 it("Should set 'isPaused' to true", async () => {
@@ -351,6 +352,7 @@ describe("Smart Wallet W/ Social Recovery", () => {
                 });
             });
         });
+
         describe("#resumeTransfers", () => {
             describe("On success", () => {
                 it("Should set 'isPaused' to false", async () => {
@@ -397,6 +399,7 @@ describe("Smart Wallet W/ Social Recovery", () => {
                 });
             });
         });
+
         describe("#receive", () => {
             it("Should update the balance after deposit", async () => {
                 const { wallet1of1, owner, guardian1, addr1 } =
@@ -471,6 +474,7 @@ describe("Smart Wallet W/ Social Recovery", () => {
                     .withArgs(addr1.address, addr1Deposit);
             });
         });
+
         describe("#transferTo", () => {
             describe("On success", () => {
                 it("Should update the balances after transfer", async () => {
@@ -943,10 +947,653 @@ describe("Smart Wallet W/ Social Recovery", () => {
     });
 
     describe("Recovery", () => {
-        describe("#setRequiredVotes", () => {});
-        describe("#triggerRecovery", () => {});
-        describe("#supportRecovery", () => {});
-        describe("#executeRecovery", () => {});
-        describe("#cancelRecovery", () => {});
+        describe("#setRequiredVotes", () => {
+            describe("On success", () => {
+                it("Should successfully change the required votes", async () => {
+                    const { wallet3of3, owner } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    const tx = await wallet3of3
+                        .connect(owner)
+                        .setRequiredVotes(1);
+                    await tx.wait();
+
+                    expect(await wallet3of3.requiredVotes()).to.equal(1);
+                });
+            });
+            describe("On failure", () => {
+                it("Should revert if caller is not the owner", async () => {
+                    const { wallet3of3, addr1 } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    await expect(
+                        wallet3of3.connect(addr1).setRequiredVotes(2)
+                    ).to.be.revertedWith("caller is not owner");
+                });
+                it("Should revert if wallet is in recovery mode", async () => {
+                    const { wallet2of3, owner, guardian1, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const tx = await wallet2of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await tx.wait();
+
+                    await expect(
+                        wallet2of3.connect(owner).setRequiredVotes(3)
+                    ).to.be.revertedWith("wallet is in recovery mode");
+                });
+                it("Should revert if required votes is not greater than zero", async () => {
+                    const { wallet3of3, owner } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    await expect(
+                        wallet3of3.connect(owner).setRequiredVotes(0)
+                    ).to.be.revertedWith(
+                        "required votes must be greater than zero"
+                    );
+                });
+                it("Should revert if required votes greater than guardians length", async () => {
+                    const { wallet1of1, owner } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    await expect(
+                        wallet1of1.connect(owner).setRequiredVotes(2)
+                    ).to.be.revertedWith(
+                        "required votes greater than the number of guardians"
+                    );
+                });
+                it("Should revert if required votes already has that value", async () => {
+                    const { wallet1of1, owner } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    await expect(
+                        wallet1of1.connect(owner).setRequiredVotes(1)
+                    ).to.be.revertedWith(
+                        "required votes already has that value"
+                    );
+                });
+            });
+        });
+
+        describe("#triggerRecovery", () => {
+            describe("On success", () => {
+                it("Should set 'inRecovery' to true", async () => {
+                    const { wallet2of3, guardian1, addr1 } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    const tx = await wallet2of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await tx.wait();
+
+                    assert.isTrue(await wallet2of3.inRecovery());
+                });
+                it("Should increase the recovery round", async () => {
+                    const { wallet2of3, guardian1, addr1 } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    const currentRecoveryRound =
+                        await wallet2of3.currentRecoveryRound();
+
+                    const tx = await wallet2of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await tx.wait();
+
+                    expect(await wallet2of3.currentRecoveryRound()).to.equal(
+                        currentRecoveryRound.add(1)
+                    );
+                });
+                it("Should successfuly save the guardian vote", async () => {
+                    const { wallet2of3, guardian1, addr1 } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    const tx = await wallet2of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await tx.wait();
+
+                    const vote = await wallet2of3.guardianToRecovery(
+                        guardian1.address
+                    );
+
+                    expect(vote.candidate).to.equal(addr1.address);
+                    expect(vote.recoveryRound).to.equal(1);
+                    assert.isFalse(vote.usedInExecuteRecovery);
+                });
+                it("Should emit RecoveryInitiated event", async () => {
+                    const { wallet1of1, guardian1, addr1 } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    const tx = await wallet1of1
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await tx.wait();
+
+                    expect(tx)
+                        .to.emit(wallet1of1, "RecoveryInitiated")
+                        .withArgs(
+                            guardian1.address,
+                            addr1.address,
+                            await wallet1of1.currentRecoveryRound()
+                        );
+                });
+                it("Should return true", async () => {
+                    const { wallet1of1, guardian1, addr1 } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    const res = await wallet1of1
+                        .connect(guardian1)
+                        .callStatic.triggerRecovery(addr1.address);
+
+                    assert.isTrue(res);
+                });
+            });
+            describe("On failure", () => {
+                it("Should revert if caller is not a guardian", async () => {
+                    const { wallet1of1, guardian2, addr1 } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    await expect(
+                        wallet1of1
+                            .connect(guardian2)
+                            .triggerRecovery(addr1.address)
+                    ).to.be.revertedWith("caller is not guardian");
+                });
+                it("Should revert if wallet is already in recovery mode", async () => {
+                    const { wallet2of3, guardian1, guardian2, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const tx = await wallet2of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await tx.wait();
+
+                    await expect(
+                        wallet2of3
+                            .connect(guardian2)
+                            .triggerRecovery(addr1.address)
+                    ).to.be.revertedWith("wallet is in recovery mode");
+                });
+                it("Should revert if candidate is the zero address", async () => {
+                    const { wallet1of1, guardian1 } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    await expect(
+                        wallet1of1
+                            .connect(guardian1)
+                            .triggerRecovery(
+                                "0x0000000000000000000000000000000000000000"
+                            )
+                    ).to.be.revertedWith("zero address invalid");
+                });
+            });
+        });
+
+        describe("#supportRecovery", () => {
+            describe("On success", () => {
+                it("Should successfully save the guardian vote", async () => {
+                    const { wallet3of3, guardian1, guardian2, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const tx = await wallet3of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await tx.wait();
+
+                    const voteTx = await wallet3of3
+                        .connect(guardian2)
+                        .supportRecovery(addr1.address);
+                    await voteTx.wait();
+
+                    const vote = await wallet3of3.guardianToRecovery(
+                        guardian2.address
+                    );
+
+                    expect(vote.candidate).to.equal(addr1.address);
+                    expect(vote.recoveryRound).to.equal(1);
+                    assert.isFalse(vote.usedInExecuteRecovery);
+                });
+                it("Should emit the RecoverySupported event", async () => {
+                    const { wallet3of3, guardian1, guardian2, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const tx = await wallet3of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await tx.wait();
+
+                    const vote = await wallet3of3
+                        .connect(guardian2)
+                        .supportRecovery(addr1.address);
+                    await vote.wait();
+
+                    expect(vote)
+                        .to.emit(wallet3of3, "RecoverySupported")
+                        .withArgs(
+                            guardian2.address,
+                            addr1.address,
+                            await wallet3of3.currentRecoveryRound()
+                        );
+                });
+                it("Should return true", async () => {
+                    const { wallet3of3, guardian1, guardian2, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const tx = await wallet3of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await tx.wait();
+
+                    const res = await wallet3of3
+                        .connect(guardian2)
+                        .callStatic.supportRecovery(addr1.address);
+
+                    assert.isTrue(res);
+                });
+            });
+
+            describe("On failure", () => {
+                it("Should revert if caller is not a guardian", async () => {
+                    const { wallet1of1, guardian2, addr1 } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    await expect(
+                        wallet1of1
+                            .connect(guardian2)
+                            .supportRecovery(addr1.address)
+                    ).to.be.revertedWith("caller is not guardian");
+                });
+                it("Should revert if wallet is not in recovery mode", async () => {
+                    const { wallet3of3, guardian1, addr1 } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    await expect(
+                        wallet3of3
+                            .connect(guardian1)
+                            .supportRecovery(addr1.address)
+                    ).to.be.revertedWith("wallet is not in recovery mode");
+                });
+            });
+        });
+
+        describe("#executeRecovery", () => {
+            describe("On success", () => {
+                it("Should turn off the recovery mode", async () => {
+                    const { wallet2of3, guardian1, guardian2, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const initRecovery = await wallet2of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    const supportRecovery = await wallet2of3
+                        .connect(guardian2)
+                        .supportRecovery(addr1.address);
+                    await supportRecovery.wait();
+
+                    const executeRecovery = await wallet2of3
+                        .connect(guardian1)
+                        .executeRecovery(addr1.address, [
+                            guardian1.address,
+                            guardian2.address,
+                        ]);
+                    await executeRecovery.wait();
+
+                    assert.isFalse(await wallet2of3.inRecovery());
+                });
+                it("Should successfully replace the owner", async () => {
+                    const { wallet2of3, guardian1, guardian2, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const initRecovery = await wallet2of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    const supportRecovery = await wallet2of3
+                        .connect(guardian2)
+                        .supportRecovery(addr1.address);
+                    await supportRecovery.wait();
+
+                    const executeRecovery = await wallet2of3
+                        .connect(guardian1)
+                        .executeRecovery(addr1.address, [
+                            guardian1.address,
+                            guardian2.address,
+                        ]);
+                    await executeRecovery.wait();
+
+                    expect(await wallet2of3.owner()).to.equal(addr1.address);
+                });
+                it("Should emit RecoveryExecuted event", async () => {
+                    const { wallet2of3, owner, guardian1, guardian2, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const initRecovery = await wallet2of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    const recoveryRound =
+                        await wallet2of3.currentRecoveryRound();
+
+                    const supportRecovery = await wallet2of3
+                        .connect(guardian2)
+                        .supportRecovery(addr1.address);
+                    await supportRecovery.wait();
+
+                    const executeRecovery = await wallet2of3
+                        .connect(guardian1)
+                        .executeRecovery(addr1.address, [
+                            guardian1.address,
+                            guardian2.address,
+                        ]);
+                    await executeRecovery.wait();
+
+                    expect(executeRecovery)
+                        .to.emit(wallet2of3, "RecoveryExecuted")
+                        .withArgs(
+                            guardian1.address,
+                            owner.address,
+                            addr1.address,
+                            recoveryRound
+                        );
+                });
+                it("Should return true", async () => {
+                    const { wallet2of3, guardian1, guardian2, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const initRecovery = await wallet2of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    const supportRecovery = await wallet2of3
+                        .connect(guardian2)
+                        .supportRecovery(addr1.address);
+                    await supportRecovery.wait();
+
+                    const executeRecovery = await wallet2of3
+                        .connect(guardian1)
+                        .callStatic.executeRecovery(addr1.address, [
+                            guardian1.address,
+                            guardian2.address,
+                        ]);
+
+                    assert.isTrue(executeRecovery);
+                });
+            });
+
+            describe("On failure", () => {
+                it("Should revert if the caller is not a guardian", async () => {
+                    const { wallet1of1, guardian1, guardian2, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const initRecovery = await wallet1of1
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    await expect(
+                        wallet1of1
+                            .connect(guardian2)
+                            .executeRecovery(addr1.address, [guardian1.address])
+                    ).to.be.revertedWith("caller is not guardian");
+                });
+                it("Should revert if the wallet is not in recovery mode", async () => {
+                    const { wallet1of1, guardian1, addr1 } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    await expect(
+                        wallet1of1
+                            .connect(guardian1)
+                            .executeRecovery(addr1.address, [guardian1.address])
+                    ).to.be.revertedWith("wallet is not in recovery mode");
+                });
+                it("Should revert if the candidate is the zero address", async () => {
+                    const { wallet1of1, guardian1, addr1 } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    const initRecovery = await wallet1of1
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    await expect(
+                        wallet1of1
+                            .connect(guardian1)
+                            .executeRecovery(
+                                "0x0000000000000000000000000000000000000000",
+                                [guardian1.address]
+                            )
+                    ).to.be.revertedWith("zero address invalid");
+                });
+                it("Should revert if the candidate is a guardian", async () => {
+                    const { wallet1of1, guardian1, guardian2, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const initRecovery = await wallet1of1
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    await expect(
+                        wallet1of1
+                            .connect(guardian1)
+                            .executeRecovery(guardian1.address, [
+                                guardian1.address,
+                            ])
+                    ).to.be.revertedWith("candidate can not be a guardian");
+                });
+                it("Should revert if guardian length is less than required votes", async () => {
+                    const { wallet3of3, guardian1, guardian2, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const initRecovery = await wallet3of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    const supportRecovery = await wallet3of3
+                        .connect(guardian2)
+                        .supportRecovery(addr1.address);
+                    await supportRecovery.wait();
+
+                    await expect(
+                        wallet3of3
+                            .connect(guardian1)
+                            .executeRecovery(addr1.address, [
+                                guardian1.address,
+                                guardian2.address,
+                            ])
+                    ).to.be.revertedWith("guardians less than required votes");
+                });
+                it("Should revert if round mismatch", async () => {
+                    const { wallet2of3, guardian1, guardian2, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const initRecovery = await wallet2of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    await expect(
+                        wallet2of3
+                            .connect(guardian1)
+                            .executeRecovery(addr1.address, [
+                                guardian1.address,
+                                guardian2.address,
+                            ])
+                    ).to.be.revertedWith("round mismatch");
+                });
+                it("Should revert if there are a disagreement on a new owner", async () => {
+                    const { wallet2of3, guardian1, guardian2, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const initRecovery = await wallet2of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    const supportRecovery = await wallet2of3
+                        .connect(guardian2)
+                        .supportRecovery(
+                            "0x0000000000000000000000000000000000000000"
+                        );
+                    await supportRecovery.wait();
+
+                    await expect(
+                        wallet2of3
+                            .connect(guardian1)
+                            .executeRecovery(addr1.address, [
+                                guardian1.address,
+                                guardian2.address,
+                            ])
+                    ).to.be.revertedWith("disagreement on new owner");
+                });
+                it("Should revert if there are duplicate guardians", async () => {
+                    const { wallet2of3, guardian1, addr1 } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    const initRecovery = await wallet2of3
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    await expect(
+                        wallet2of3
+                            .connect(guardian1)
+                            .executeRecovery(addr1.address, [
+                                guardian1.address,
+                                guardian1.address,
+                            ])
+                    ).to.be.revertedWith("duplicate guardian");
+                });
+            });
+        });
+
+        describe("#cancelRecovery", () => {
+            describe("On success", () => {
+                it("Should turn off the recovery mode", async () => {
+                    const { wallet1of1, owner, guardian1, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const initRecovery = await wallet1of1
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    const cancelRecovery = await wallet1of1
+                        .connect(owner)
+                        .cancelRecovery();
+                    await cancelRecovery.wait();
+
+                    assert.isFalse(await wallet1of1.inRecovery());
+                });
+                it("Should increase the recovery round", async () => {
+                    const { wallet1of1, owner, guardian1, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const initRecovery = await wallet1of1
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    const recoveryRound =
+                        await wallet1of1.currentRecoveryRound();
+
+                    const cancelRecovery = await wallet1of1
+                        .connect(owner)
+                        .cancelRecovery();
+                    await cancelRecovery.wait();
+
+                    expect(await wallet1of1.currentRecoveryRound()).to.equal(
+                        recoveryRound.add(1)
+                    );
+                });
+                it("Should emit RecoveryCancelled", async () => {
+                    const { wallet1of1, owner, guardian1, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const initRecovery = await wallet1of1
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    const recoveryRound =
+                        await wallet1of1.currentRecoveryRound();
+
+                    const cancelRecovery = await wallet1of1
+                        .connect(owner)
+                        .cancelRecovery();
+                    await cancelRecovery.wait();
+
+                    expect(cancelRecovery)
+                        .to.emit(wallet1of1, "RecoveryCancelled")
+                        .withArgs(recoveryRound);
+                });
+                it("Should return true", async () => {
+                    const { wallet1of1, owner, guardian1, addr1 } =
+                        await loadFixture(deployWalletsFixture);
+
+                    const initRecovery = await wallet1of1
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    const cancelRecovery = await wallet1of1
+                        .connect(owner)
+                        .callStatic.cancelRecovery();
+
+                    assert.isTrue(cancelRecovery);
+                });
+            });
+
+            describe("On failure", () => {
+                it("Should revert if caller is not the owner", async () => {
+                    const { wallet1of1, guardian1, addr1 } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    const initRecovery = await wallet1of1
+                        .connect(guardian1)
+                        .triggerRecovery(addr1.address);
+                    await initRecovery.wait();
+
+                    await expect(
+                        wallet1of1.connect(addr1).cancelRecovery()
+                    ).to.be.revertedWith("caller is not owner");
+                });
+                it("Should revert if wallet is not in recovery mode", async () => {
+                    const { wallet1of1, owner } = await loadFixture(
+                        deployWalletsFixture
+                    );
+
+                    await expect(
+                        wallet1of1.connect(owner).cancelRecovery()
+                    ).to.be.revertedWith("wallet is not in recovery mode");
+                });
+            });
+        });
     });
 });

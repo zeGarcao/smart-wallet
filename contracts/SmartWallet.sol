@@ -35,7 +35,7 @@ contract SmartWallet {
     }
 
     /// @notice mapping from guardian address to their Recovery struct
-    mapping(address => Recovery) guardianToRecovery;
+    mapping(address => Recovery) public guardianToRecovery;
 
     /******************************************************
      *   MODIFIERS
@@ -267,11 +267,10 @@ contract SmartWallet {
     /**
      *
      * @param _requiredVotes - new required votes to transfer ownership
-     * @return - true if required votes changed successfuly
      */
     function setRequiredVotes(
         uint _requiredVotes
-    ) external onlyOwner notInRecovery returns (bool) {
+    ) external onlyOwner notInRecovery {
         require(_requiredVotes > 0, "required votes must be greater than zero");
         require(
             _requiredVotes <= guardians.length,
@@ -283,8 +282,6 @@ contract SmartWallet {
         );
 
         requiredVotes = _requiredVotes;
-
-        return true;
     }
 
     /**
@@ -332,9 +329,10 @@ contract SmartWallet {
         address[] calldata _guardians
     ) public onlyGuardian onlyInRecovery returns (bool) {
         require(_candidate != address(0), "zero address invalid");
+        require(!isGuardian[_candidate], "candidate can not be a guardian");
         require(
             _guardians.length >= requiredVotes,
-            "guardians less than required"
+            "guardians less than required votes"
         );
 
         for (uint i = 0; i < _guardians.length; i++) {
