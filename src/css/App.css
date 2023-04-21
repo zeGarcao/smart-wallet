@@ -1,0 +1,51 @@
+/* | HEADER */
+header {
+    border: 2px solid red;
+    
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.brand-logo {
+    width: 6rem;
+}
+
+.brand-name {
+    display: none;
+}
+
+nav {
+    display: none;
+}
+
+.navbar-toggler {
+    /* border: 2px solid black; */
+    
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.25rem;
+}
+
+.navbar-toggler .bar {
+    width: 2rem;
+    height: 0.25rem;
+    background: black;
+}
+
+header input {
+    display: none;
+}
+
+/* | MAIN */
+main {
+    border: 2px solid green;
+    
+    flex: 1;
+}
+
+/* | FOOTER */
+footer {
+    border: 2px solid blue;
+}

@@ -1,12 +1,13 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
-import "./css/index.css";
+import "./css/App.css";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import Settings from "./pages/Settings";
 import RecoveryStats from "./pages/RecoveryStats";
 import RecoveryHistory from "./pages/RecoveryHistory";
 import Header from "./components/Header";
+import Footer from "./components/Footer";
 
 function App() {
     return (
@@ -30,6 +31,7 @@ function App() {
                         <RecoveryHistory />
                     </Route>
                 </Switch>
+                <Footer />
             </Router>
         </>
     );

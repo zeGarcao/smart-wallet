@@ -1,7 +1,12 @@
 import React from "react";
 
 function Transactions() {
-    return <div>Transactions</div>;
+    return (
+        <main>
+            <h1>transactions</h1>
+            <section></section>
+        </main>
+    );
 }
 
 export default Transactions;

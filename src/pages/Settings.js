@@ -3,13 +3,17 @@ import { Link } from "react-router-dom";
 
 function Settings() {
     return (
-        <div>
-            Settings <br />
-            <Link to="/recovery-stats">recovery stats</Link>
-            <br />
-            <Link to="/recovery-history">recovery history</Link>
-            <br />
-        </div>
+        <main>
+            <h1>settings</h1>
+            <section>
+                <h2>wallet</h2>
+                <div></div>
+                <h2>guardians</h2>
+                <div></div>
+                <h2>recovery</h2>
+                <div></div>
+            </section>
+        </main>
     );
 }
 
