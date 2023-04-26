@@ -1,14 +1,19 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import phoenixLogo from "../imgs/phoenix.gif";
+import phoenixLogo from "../imgs/phoenix.png";
 
 function Header() {
     return (
         <header>
             <div className="brand">
-                <img src={phoenixLogo} alt="logo" className="brand-logo" />
-                <h2 className="brand-name">wallet</h2>
+                <img src={phoenixLogo} alt="phoenix" className="brand-logo" />
+                <h3 className="brand-name">
+                    phoenix
+                    <br />
+                    <span>wallet</span>
+                </h3>
             </div>
+
             <nav>
                 <ul>
                     <li>
@@ -22,13 +27,8 @@ function Header() {
                     </li>
                 </ul>
             </nav>
-            <button>connect</button>
-            <label className="navbar-toggler" htmlFor="toggle">
-                <span className="bar"></span>
-                <span className="bar"></span>
-                <span className="bar"></span>
-            </label>
-            <input type="checkbox" id="toggle" />
+
+            <button className="btn-connect">connect</button>
         </header>
     );
 }

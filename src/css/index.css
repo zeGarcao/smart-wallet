@@ -1,4 +1,4 @@
-@import url('https://fonts.cdnfonts.com/css/public-pixel');
+@import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
 
 /* || RESET */
 
@@ -8,9 +8,24 @@
     box-sizing: border-box;
 }
 
-button {
-    font-family: inherit;
-    font-size: inherit;
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* || MAIN STYLE */
+
+body {
+    /* border: 2px solid purple; */
+
+    font-family: 'Silkscreen', cursive;
+    font-size: 1rem;
+    cursor: default;
+    background: linear-gradient(#A1FFCE, #FAFFD1);
+    color: #595959;
+    min-height: 100vh;
 }
 
 #root {
@@ -19,13 +34,4 @@ button {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-}
-
-/* || MAIN STYLE */
-
-body {
-    /* border: 2px solid purple; */
-
-    font-family: 'Public Pixel', sans-serif;
-    font-size: 1rem;
 }
