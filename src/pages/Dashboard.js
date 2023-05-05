@@ -2,8 +2,29 @@ import React from "react";
 import ethLogo from "../imgs/eth-logo.png";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy } from "@fortawesome/free-solid-svg-icons";
+import { WALLET_CONTRACT_ADDRESS, getWalletBalance } from "../web3/web3-utils";
 
 function Dashboard() {
+    const [balance, setBalance] = React.useState(0);
+
+    React.useEffect(() => {
+        const setup = async () => {
+            await updateBalance();
+        };
+
+        const updateBalance = async () => {
+            const updatedBalance = await getWalletBalance();
+            setBalance(updatedBalance);
+        };
+
+        setup();
+        const balanceJob = setInterval(updateBalance, 10000);
+
+        return () => {
+            clearInterval(balanceJob);
+        };
+    }, []);
+
     return (
         <main>
             <h1>dashboard</h1>
@@ -16,7 +37,12 @@ function Dashboard() {
                         <div>
                             <h3>address</h3>
                             <span>
-                                0x1234...AbCd
+                                {`${WALLET_CONTRACT_ADDRESS.slice(
+                                    0,
+                                    6
+                                )}...${WALLET_CONTRACT_ADDRESS.slice(
+                                    WALLET_CONTRACT_ADDRESS.length - 4
+                                )}`}
                                 <FontAwesomeIcon
                                     icon={faCopy}
                                     className="icon"
@@ -25,7 +51,7 @@ function Dashboard() {
                         </div>
                         <div>
                             <h3>balance</h3>
-                            <span>10.012442 ETH</span>
+                            <span>{`${balance} ETH`}</span>
                         </div>
                     </div>
                 </div>

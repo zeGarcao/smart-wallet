@@ -516,6 +516,31 @@ footer .social-icon:hover {
     color: #595959;
 }
 
+/* | CHAIN CHANGE */
+.chain-change {
+    /* border: 2px solid red; */
+    
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(24, 164, 124, 0.75);
+    z-index: 2;
+}
+
+.chain-change div {
+    /* border: 2px solid rosybrown; */
+    
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 1.5rem 2rem;
+    background-color: whitesmoke;
+    box-shadow: 2px 2px 0px #595959;
+}
+
 /* || SMALL */
 @media screen and (min-width: 576px) {
     header {

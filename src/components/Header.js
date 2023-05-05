@@ -1,8 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import phoenixLogo from "../imgs/phoenix.png";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPowerOff } from "@fortawesome/free-solid-svg-icons";
 
-function Header() {
+function Header({ account, connect }) {
     return (
         <header>
             <div className="brand">
@@ -27,8 +29,11 @@ function Header() {
                     </li>
                 </ul>
             </nav>
-
-            <button className="btn-connect">connect</button>
+            <button className="btn-connect" onClick={connect}>
+                {account
+                    ? `0x...${account.slice(account.length - 4)}`
+                    : "connect"}
+            </button>
         </header>
     );
 }
