@@ -135,7 +135,7 @@ contract SmartWallet {
      ******************************************************/
 
     /// @notice allows deposit of ether
-    receive() external payable {
+    function deposit() public payable {
         emit Deposit(msg.sender, msg.value);
     }
 

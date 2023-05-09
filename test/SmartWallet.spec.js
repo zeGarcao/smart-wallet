@@ -52,18 +52,15 @@ describe("Smart Wallet W/ Social Recovery", () => {
 
         const funds = ethers.utils.parseEther("5.0");
 
-        const wallet1of1DepositTx = await owner.sendTransaction({
-            to: wallet1of1.address,
-            value: funds,
-        });
-        const wallet3of3DepositTx = await owner.sendTransaction({
-            to: wallet3of3.address,
-            value: funds,
-        });
-        const wallet2of3DepositTx = await owner.sendTransaction({
-            to: wallet2of3.address,
-            value: funds,
-        });
+        const wallet1of1DepositTx = await wallet1of1
+            .connect(owner)
+            .deposit({ value: funds });
+        const wallet3of3DepositTx = await wallet3of3
+            .connect(owner)
+            .deposit({ value: funds });
+        const wallet2of3DepositTx = await wallet2of3
+            .connect(owner)
+            .deposit({ value: funds });
 
         await wallet1of1DepositTx.wait(),
             wallet3of3DepositTx.wait(),
@@ -411,18 +408,17 @@ describe("Smart Wallet W/ Social Recovery", () => {
                 const guardian1Deposit = ethers.utils.parseEther("0.75");
                 const addr1Deposit = ethers.utils.parseEther("1.5");
 
-                const ownerTx = await owner.sendTransaction({
-                    to: wallet1of1.address,
+                const ownerTx = await wallet1of1.connect(owner).deposit({
                     value: ownerDeposit,
                 });
 
-                const guardian1Tx = await guardian1.sendTransaction({
-                    to: wallet1of1.address,
-                    value: guardian1Deposit,
-                });
+                const guardian1Tx = await wallet1of1
+                    .connect(guardian1)
+                    .deposit({
+                        value: guardian1Deposit,
+                    });
 
-                const addr1Tx = await addr1.sendTransaction({
-                    to: wallet1of1.address,
+                const addr1Tx = await wallet1of1.connect(addr1).deposit({
                     value: addr1Deposit,
                 });
 
@@ -444,18 +440,17 @@ describe("Smart Wallet W/ Social Recovery", () => {
                 const guardian1Deposit = ethers.utils.parseEther("0.75");
                 const addr1Deposit = ethers.utils.parseEther("1.5");
 
-                const ownerTx = await owner.sendTransaction({
-                    to: wallet1of1.address,
+                const ownerTx = await wallet1of1.connect(owner).deposit({
                     value: ownerDeposit,
                 });
 
-                const guardian1Tx = await guardian1.sendTransaction({
-                    to: wallet1of1.address,
-                    value: guardian1Deposit,
-                });
+                const guardian1Tx = await wallet1of1
+                    .connect(guardian1)
+                    .deposit({
+                        value: guardian1Deposit,
+                    });
 
-                const addr1Tx = await addr1.sendTransaction({
-                    to: wallet1of1.address,
+                const addr1Tx = await wallet1of1.connect(addr1).deposit({
                     value: addr1Deposit,
                 });
 

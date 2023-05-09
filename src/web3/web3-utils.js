@@ -4,7 +4,7 @@ import SmartWalletArtifact from "./SmartWallet.json";
 
 const HARDHAT_CHAIN_ID = 31337;
 const HARDHAT_CHAIN_ID_HEX = "0x7a69";
-const HARDHAT_NETWORK_NAME = "Hardhat Netowrk";
+const HARDHAT_NETWORK_NAME = "Hardhat Network";
 const HARDHAT_SYMBOL = "ETH";
 const HARDHAT_DECIMALS = 18;
 
@@ -25,6 +25,9 @@ const WALLET_CONTRACT = new ethers.Contract(
     WALLET_CONTRACT_ABI,
     PROVIDER
 );
+
+const WALLET_CONNECTION_ERROR = "Unable to connect to wallet contract";
+const METAMASK_CONNECTION_ERROR = "Your metamask is not connected";
 
 const connectWallet = async () => {
     const metamask = await detectEthereumProvider();
@@ -90,6 +93,22 @@ const setOnChainChangedListener = async listener => {
     }
 };
 
+const setOnDepositListener = async listener => {
+    WALLET_CONTRACT.on("Deposit", listener);
+};
+
+const setOnTransferListener = async listener => {
+    WALLET_CONTRACT.on("Transfer", listener);
+};
+
+const removeOnDepositListener = async listener => {
+    WALLET_CONTRACT.off("Deposit", listener);
+};
+
+const removeOnTransferListener = async listener => {
+    WALLET_CONTRACT.off("Transfer", listener);
+};
+
 const changeChain = async () => {
     const metamask = await detectEthereumProvider();
 
@@ -107,6 +126,7 @@ const changeChain = async () => {
                         params: [
                             {
                                 chainName: NETWORK_NAME,
+                                chainId: CHAIN_ID_HEX,
                                 rpcUrls: [RPC_ENDPOINT],
                                 symbol: SYMBOL,
                                 decimals: DECIMALS,
@@ -123,8 +143,57 @@ const changeChain = async () => {
 
 const getWalletBalance = async () => {
     const rawBalance = await WALLET_CONTRACT.getBalance();
-    const balance = ethers.utils.parseEther(rawBalance.toString());
+    const balance = ethers.utils.formatEther(rawBalance.toString());
     return balance;
+};
+
+const sendTransaction = async txInfo => {
+    const wallet = await getWallet();
+    const response = { success: false, error: WALLET_CONNECTION_ERROR };
+
+    if (wallet) {
+        try {
+            const recipient = txInfo.recipient;
+            const amount = ethers.utils.parseEther(txInfo.amount);
+            const tx =
+                recipient == WALLET_CONTRACT_ADDRESS
+                    ? await wallet.deposit({ value: amount })
+                    : await wallet.transferTo(recipient, amount);
+            await tx.wait();
+
+            response.success = true;
+            response.error = "";
+        } catch (error) {
+            const stringifyError = JSON.stringify(error);
+            const objectError = JSON.parse(stringifyError);
+            const reason = objectError.reason;
+
+            response.error =
+                reason == "unknown account #0"
+                    ? METAMASK_CONNECTION_ERROR
+                    : objectError.reason;
+        }
+    }
+
+    return response;
+};
+
+const getWallet = async () => {
+    let wallet = undefined;
+    const metamask = await detectEthereumProvider();
+
+    if (metamask) {
+        const metamaskProvider = new ethers.providers.Web3Provider(metamask);
+        const signer = metamaskProvider.getSigner();
+        if (signer) {
+            wallet = new ethers.Contract(
+                WALLET_CONTRACT_ADDRESS,
+                WALLET_CONTRACT_ABI,
+                signer
+            );
+        }
+    }
+    return wallet;
 };
 
 export {
@@ -136,5 +205,10 @@ export {
     changeChain,
     setOnAccountsChangedListener,
     setOnChainChangedListener,
+    setOnDepositListener,
+    setOnTransferListener,
+    removeOnTransferListener,
+    removeOnDepositListener,
     getWalletBalance,
+    sendTransaction,
 };

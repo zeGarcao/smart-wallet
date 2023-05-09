@@ -8,18 +8,13 @@ import RecoveryStats from "./pages/RecoveryStats";
 import RecoveryHistory from "./pages/RecoveryHistory";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import {
-    changeChain,
-    connectWallet,
-    getChainId,
-    getConnectedAccount,
-    setOnAccountsChangedListener,
-    setOnChainChangedListener,
-} from "./web3/web3-utils";
-import Cookies from "js-cookie";
-import sha256 from "sha256";
-import detectEthereumProvider from "@metamask/detect-provider";
 import ChainChange from "./components/ChainChange";
+import {
+    connectWallet,
+    getConnectedAccount,
+    sendTransaction,
+    setOnAccountsChangedListener,
+} from "./web3/web3-utils";
 
 function App() {
     const [account, setAccount] = React.useState(undefined);
@@ -40,8 +35,15 @@ function App() {
 
     const connect = async () => {
         const newAccount = await connectWallet();
-
         setAccount(newAccount);
+    };
+
+    const sendTx = async tx => {
+        const response = await sendTransaction(tx);
+
+        if (!response.success) {
+            alert(response.error);
+        }
     };
 
     return (
@@ -50,7 +52,7 @@ function App() {
                 <Header account={account} connect={connect} />
                 <Switch>
                     <Route exact path="/">
-                        <Dashboard />
+                        <Dashboard sendTx={sendTx} />
                     </Route>
                     <Route exact path="/transactions">
                         <Transactions />

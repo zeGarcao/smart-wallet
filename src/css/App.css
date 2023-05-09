@@ -248,6 +248,29 @@ main section {
     text-align: center;
 }
 
+.wallet-transfer .icon:hover {
+    color: #18A47C;
+    cursor: pointer;
+}
+
+.wallet-transfer-mode {
+    color: #18A47C;
+}
+
+.wallet-transfer input[type="checkbox"]:checked ~ h3 .wallet-deposit-mode {
+    color: #18A47C;
+}
+
+.wallet-transfer input[type="checkbox"]:checked ~ h3 .wallet-transfer-mode {
+    color: #595959;
+}
+
+.wallet-transfer input[type="text"]:disabled {
+    color: whitesmoke;
+    background-color: #18A47C;
+    outline: none;
+}
+
 /* | TRANSACTIONS */
 .txs {
     /* border: 2px solid red; */
