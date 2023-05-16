@@ -9,11 +9,22 @@ function Footer() {
                 made by <span className="author-ens">zegarcao.eth</span>
             </div>
             <div className="social">
-                <FontAwesomeIcon
-                    icon={faGithubSquare}
-                    className="social-icon"
-                />{" "}
-                <FontAwesomeIcon icon={faLinkedin} className="social-icon" />
+                <a
+                    href="https://github.com/zeGarcao/smart-wallet"
+                    target="_blank">
+                    <FontAwesomeIcon
+                        icon={faGithubSquare}
+                        className="social-icon"
+                    />
+                </a>{" "}
+                <a
+                    href="https://www.linkedin.com/in/jose-garcao"
+                    target="_blank">
+                    <FontAwesomeIcon
+                        icon={faLinkedin}
+                        className="social-icon"
+                    />
+                </a>
             </div>
         </footer>
     );

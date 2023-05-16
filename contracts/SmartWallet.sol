@@ -83,24 +83,24 @@ contract SmartWallet {
 
     /// @notice emitted when the recovery round is initiated
     event RecoveryInitiated(
+        uint indexed round,
         address indexed by,
-        address candidate,
-        uint indexed round
+        address candidate
     );
 
     /// @notice emitted when the recovery round is supported
     event RecoverySupported(
+        uint indexed round,
         address indexed by,
-        address candidate,
-        uint indexed round
+        address candidate
     );
 
     /// @notice emitted when the recovery round is executed
     event RecoveryExecuted(
+        uint indexed round,
         address indexed by,
         address oldOwner,
-        address newOwner,
-        uint indexed round
+        address newOwner
     );
 
     /// @notice emitted when the recovery round is cancelled
@@ -298,7 +298,7 @@ contract SmartWallet {
         ++currentRecoveryRound;
         saveVote(msg.sender, Recovery(_candidate, currentRecoveryRound, false));
 
-        emit RecoveryInitiated(msg.sender, _candidate, currentRecoveryRound);
+        emit RecoveryInitiated(currentRecoveryRound, msg.sender, _candidate);
 
         return true;
     }
@@ -313,7 +313,7 @@ contract SmartWallet {
     ) public onlyGuardian onlyInRecovery returns (bool) {
         saveVote(msg.sender, Recovery(_candidate, currentRecoveryRound, false));
 
-        emit RecoverySupported(msg.sender, _candidate, currentRecoveryRound);
+        emit RecoverySupported(currentRecoveryRound, msg.sender, _candidate);
 
         return true;
     }
@@ -356,10 +356,10 @@ contract SmartWallet {
         owner = _candidate;
 
         emit RecoveryExecuted(
+            currentRecoveryRound,
             msg.sender,
             oldOwner,
-            owner,
-            currentRecoveryRound
+            owner
         );
 
         return true;
@@ -371,10 +371,8 @@ contract SmartWallet {
      */
     function cancelRecovery() public onlyOwner onlyInRecovery returns (bool) {
         inRecovery = false;
-        uint cancelledRound = currentRecoveryRound;
-        ++currentRecoveryRound;
 
-        emit RecoveryCancelled(cancelledRound);
+        emit RecoveryCancelled(currentRecoveryRound);
 
         return true;
     }

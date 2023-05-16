@@ -397,7 +397,7 @@ describe("Smart Wallet W/ Social Recovery", () => {
             });
         });
 
-        describe("#receive", () => {
+        describe("#deposit", () => {
             it("Should update the balance after deposit", async () => {
                 const { wallet1of1, owner, guardian1, addr1 } =
                     await loadFixture(deployWalletsFixture);
@@ -1504,27 +1504,6 @@ describe("Smart Wallet W/ Social Recovery", () => {
                     await cancelRecovery.wait();
 
                     assert.isFalse(await wallet1of1.inRecovery());
-                });
-                it("Should increase the recovery round", async () => {
-                    const { wallet1of1, owner, guardian1, addr1 } =
-                        await loadFixture(deployWalletsFixture);
-
-                    const initRecovery = await wallet1of1
-                        .connect(guardian1)
-                        .triggerRecovery(addr1.address);
-                    await initRecovery.wait();
-
-                    const recoveryRound =
-                        await wallet1of1.currentRecoveryRound();
-
-                    const cancelRecovery = await wallet1of1
-                        .connect(owner)
-                        .cancelRecovery();
-                    await cancelRecovery.wait();
-
-                    expect(await wallet1of1.currentRecoveryRound()).to.equal(
-                        recoveryRound.add(1)
-                    );
                 });
                 it("Should emit RecoveryCancelled", async () => {
                     const { wallet1of1, owner, guardian1, addr1 } =

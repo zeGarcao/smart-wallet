@@ -8,11 +8,12 @@ import {
     getWalletBalance,
     removeOnDepositListener,
     removeOnTransferListener,
+    sendTransaction,
     setOnDepositListener,
     setOnTransferListener,
 } from "../web3/web3-utils";
 
-function Dashboard({ sendTx }) {
+function Dashboard({ showLoading, hideLoading }) {
     const [balance, setBalance] = React.useState(0);
     const [tx, setTx] = React.useState({
         recipient: "",
@@ -23,9 +24,11 @@ function Dashboard({ sendTx }) {
 
     React.useEffect(() => {
         const setup = async () => {
+            showLoading();
             await updatedBalance();
             setOnDepositListener(updatedBalance);
             setOnTransferListener(updatedBalance);
+            hideLoading();
         };
 
         setup();
@@ -44,6 +47,10 @@ function Dashboard({ sendTx }) {
             };
         });
     }, [isDeposit]);
+
+    const copy = () => {
+        navigator.clipboard.writeText(WALLET_CONTRACT_ADDRESS);
+    };
 
     const toggleTransferMode = () => {
         setIsDeposit(prevIsDeposit => !prevIsDeposit);
@@ -65,12 +72,19 @@ function Dashboard({ sendTx }) {
     };
 
     const handleTxSubmit = async () => {
-        await sendTx(tx);
+        showLoading();
+        const response = await sendTransaction(tx);
+
         setTx({
             recipient: isDeposit ? WALLET_CONTRACT_ADDRESS : "",
             asset: "ETH",
             amount: "",
         });
+        hideLoading();
+        if (!response.success) {
+            alert(response.error);
+            hideLoading();
+        }
     };
 
     return (
@@ -94,6 +108,7 @@ function Dashboard({ sendTx }) {
                                 <FontAwesomeIcon
                                     icon={faCopy}
                                     className="icon"
+                                    onClick={copy}
                                 />
                             </span>
                         </div>

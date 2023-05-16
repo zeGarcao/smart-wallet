@@ -1,10 +1,13 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import phoenixLogo from "../imgs/phoenix.png";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPowerOff } from "@fortawesome/free-solid-svg-icons";
 
 function Header({ account, connect }) {
+    const copy = event => {
+        const target = event.target;
+        navigator.clipboard.writeText(target.id);
+    };
+
     return (
         <header>
             <div className="brand">
@@ -29,7 +32,10 @@ function Header({ account, connect }) {
                     </li>
                 </ul>
             </nav>
-            <button className="btn-connect" onClick={connect}>
+            <button
+                className="btn-connect"
+                onClick={!account ? connect : copy}
+                id={account}>
                 {account
                     ? `0x...${account.slice(account.length - 4)}`
                     : "connect"}

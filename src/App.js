@@ -12,38 +12,44 @@ import ChainChange from "./components/ChainChange";
 import {
     connectWallet,
     getConnectedAccount,
-    sendTransaction,
     setOnAccountsChangedListener,
 } from "./web3/web3-utils";
+import Loader from "./components/Loader";
 
 function App() {
     const [account, setAccount] = React.useState(undefined);
+    const [isLoading, setIsLoading] = React.useState(false);
 
     React.useEffect(() => {
         const setup = async () => {
+            showLoading();
             const onAccountsChanged = accounts => {
+                showLoading();
                 setAccount(accounts[0]);
+                hideLoading();
             };
 
             const connectedAccount = await getConnectedAccount();
             setOnAccountsChangedListener(onAccountsChanged);
             setAccount(connectedAccount);
+            hideLoading();
         };
 
         setup();
     }, []);
 
     const connect = async () => {
+        showLoading();
         const newAccount = await connectWallet();
         setAccount(newAccount);
+        hideLoading();
     };
 
-    const sendTx = async tx => {
-        const response = await sendTransaction(tx);
-
-        if (!response.success) {
-            alert(response.error);
-        }
+    const showLoading = () => {
+        setIsLoading(true);
+    };
+    const hideLoading = () => {
+        setIsLoading(false);
     };
 
     return (
@@ -52,23 +58,39 @@ function App() {
                 <Header account={account} connect={connect} />
                 <Switch>
                     <Route exact path="/">
-                        <Dashboard sendTx={sendTx} />
+                        <Dashboard
+                            showLoading={showLoading}
+                            hideLoading={hideLoading}
+                        />
                     </Route>
                     <Route exact path="/transactions">
-                        <Transactions />
+                        <Transactions
+                            showLoading={showLoading}
+                            hideLoading={hideLoading}
+                        />
                     </Route>
                     <Route exact path="/settings">
-                        <Settings />
+                        <Settings
+                            showLoading={showLoading}
+                            hideLoading={hideLoading}
+                        />
                     </Route>
                     <Route exact path="/recovery-stats">
-                        <RecoveryStats />
+                        <RecoveryStats
+                            showLoading={showLoading}
+                            hideLoading={hideLoading}
+                        />
                     </Route>
                     <Route exact path="/recovery-history">
-                        <RecoveryHistory />
+                        <RecoveryHistory
+                            showLoading={showLoading}
+                            hideLoading={hideLoading}
+                        />
                     </Route>
                 </Switch>
                 <Footer />
                 <ChainChange account={account} />
+                <Loader isLoading={isLoading} />
             </Router>
         </>
     );
