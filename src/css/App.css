@@ -404,10 +404,6 @@ main section {
     gap: 1rem;
 }
 
-.recovery-section:hover {
-    outline: 2px solid #18A47C;
-}
-
 .recovery-result table th {
     font-size: 0.75rem;
 }
@@ -470,6 +466,10 @@ main section {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+}
+
+.recovery-round:hover {
+    outline: 2px solid #18A47C;
 }
 
 .recovery-round--state {
