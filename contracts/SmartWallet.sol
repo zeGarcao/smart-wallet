@@ -152,9 +152,9 @@ contract SmartWallet {
         require(_to != address(0), "receiver can not be the zero address");
         require(_amount <= address(this).balance, "insufficient balance");
 
-        payable(_to).transfer(_amount);
-
         emit Transfer(_to, _amount);
+
+        payable(_to).transfer(_amount);
 
         return true;
     }

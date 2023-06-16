@@ -2,23 +2,25 @@ import detectEthereumProvider from "@metamask/detect-provider";
 import { ethers } from "ethers";
 import SmartWalletArtifact from "./SmartWallet.json";
 
-const HARDHAT_CHAIN_ID = 31337;
-const HARDHAT_CHAIN_ID_HEX = "0x7a69";
-const HARDHAT_NETWORK_NAME = "Hardhat Network";
-const HARDHAT_SYMBOL = "ETH";
-const HARDHAT_DECIMALS = 18;
+/* || FOR HARDHAT NETWORK || */
+const CHAIN_ID = parseInt(process.env.REACT_APP_HARDHAT_CHAIN_ID);
+const CHAIN_ID_HEX = process.env.REACT_APP_HARDHAT_CHAIN_ID_HEX;
+const RPC_ENDPOINT = process.env.REACT_APP_LOCAL_ENDPOINT;
+const NETWORK_NAME = process.env.REACT_APP_HARDHAT_NETWORK_NAME;
+const SYMBOL = process.env.REACT_APP_HARDHAT_SYMBOL;
+const DECIMALS = parseInt(process.env.REACT_APP_HARDHAT_DECIMALS);
 
-const LOCAL_ENDPOINT = "http://127.0.0.1:8545/";
+/* || FOR SEPOLIA TEST NETWORK || */
+// const CHAIN_ID = parseInt(process.env.REACT_APP_SEPOLIA_CHAIN_ID);
+// const CHAIN_ID_HEX = process.env.REACT_APP_SEPOLIA_CHAIN_ID_HEX;
+// const RPC_ENDPOINT = process.env.REACT_APP_INFURA_ENDPOINT;
+// const NETWORK_NAME = process.env.REACT_APP_SEPOLIA_NETWORK_NAME;
+// const SYMBOL = process.env.REACT_APP_SEPOLIA_SYMBOL;
+// const DECIMALS = parseInt(process.env.REACT_APP_SEPOLIA_DECIMALS);
 
-const CHAIN_ID = HARDHAT_CHAIN_ID;
-const CHAIN_ID_HEX = HARDHAT_CHAIN_ID_HEX;
-const RPC_ENDPOINT = LOCAL_ENDPOINT;
-const NETWORK_NAME = HARDHAT_NETWORK_NAME;
-const SYMBOL = HARDHAT_SYMBOL;
-const DECIMALS = HARDHAT_DECIMALS;
 const PROVIDER = new ethers.providers.JsonRpcProvider(RPC_ENDPOINT, CHAIN_ID);
 
-const WALLET_CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const WALLET_CONTRACT_ADDRESS = process.env.REACT_APP_WALLET_CONTRACT_ADDRESS;
 const WALLET_CONTRACT_ABI = SmartWalletArtifact.abi;
 const WALLET_CONTRACT = new ethers.Contract(
     WALLET_CONTRACT_ADDRESS,
