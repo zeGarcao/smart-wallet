@@ -9,6 +9,7 @@ const RPC_ENDPOINT = process.env.REACT_APP_LOCAL_ENDPOINT;
 const NETWORK_NAME = process.env.REACT_APP_HARDHAT_NETWORK_NAME;
 const SYMBOL = process.env.REACT_APP_HARDHAT_SYMBOL;
 const DECIMALS = parseInt(process.env.REACT_APP_HARDHAT_DECIMALS);
+/* || FOR HARDHAT NETWORK - END || */
 
 /* || FOR SEPOLIA TEST NETWORK || */
 // const CHAIN_ID = parseInt(process.env.REACT_APP_SEPOLIA_CHAIN_ID);
@@ -17,6 +18,7 @@ const DECIMALS = parseInt(process.env.REACT_APP_HARDHAT_DECIMALS);
 // const NETWORK_NAME = process.env.REACT_APP_SEPOLIA_NETWORK_NAME;
 // const SYMBOL = process.env.REACT_APP_SEPOLIA_SYMBOL;
 // const DECIMALS = parseInt(process.env.REACT_APP_SEPOLIA_DECIMALS);
+/* || FOR SEPOLIA TEST NETWORK - END || */
 
 const PROVIDER = new ethers.providers.JsonRpcProvider(RPC_ENDPOINT, CHAIN_ID);
 
