@@ -185,6 +185,22 @@ const DECIMALS = parseInt(process.env.REACT_APP_SEPOLIA_DECIMALS);
 /* || FOR SEPOLIA TEST NETWORK - END || */
 ```
 
+Before deploy the contract, change the `deploy.js` file under the `./scripts` folder, in order to define your guardians and the number of required votes.
+
+Configuration example (`deploy.js`):
+```bash
+/* || TO DEPLOY WITH ANOTHER SETTINGS (SEPOLIA) */
+const smartWalletContract = await smartWalletFabric
+    .deploy(
+        [[list of guardian addresses]],
+        [number of required votes]
+    );
+|| TO DEPLOY WITH ANOTHER SETTINGS (SEPOLIA) - END */
+```
+
+**Note**
+Replace `[list of guardian addresses]` and `[number of required votes]` with your guardian addresses and the number of required votes, respectively.
+
 Next, you need to deploy the smart contract in the Sepolia network. To do so, run the following command:
 
 ```bash
@@ -207,20 +223,6 @@ Next, run the following command below to start the app and you are ready to go:
 ```bash
 npm start
 ```
-
-Different configuration example (`deploy.js`):
-```bash
-/* || TO DEPLOY WITH ANOTHER SETTINGS (SEPOLIA) */
-const smartWalletContract = await smartWalletFabric
-    .deploy(
-        [[list of guardian addresses]],
-        [number of required votes]
-    );
-|| TO DEPLOY WITH ANOTHER SETTINGS (SEPOLIA) - END */
-```
-
-**Note**
-Replace `[list of guardian addresses]` and `[number of required votes]` with your guardian addresses and the number of required votes, respectively.
 
 ## Tests
 In order to run the unit tests, run the following command:
